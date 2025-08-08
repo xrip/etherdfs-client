@@ -77,7 +77,6 @@ static struct cdsstruct far *getcds(unsigned int drive) {
 
 int main(int argc, char **argv) {
   struct cdsstruct far *cds;
-  int i;
   unsigned char drive_letter;
   unsigned int drive_num;
 
@@ -102,7 +101,7 @@ int main(int argc, char **argv) {
 
   if (drive_letter < 'A' || drive_letter > 'Z') {
       printf("Invalid drive letter.\n");
-      return 1;
+      return (1);
   }
 
   drive_num = DRIVETONUM(drive_letter);
