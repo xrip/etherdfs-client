@@ -31,6 +31,31 @@
 #include "dosstruc.h"
 #include "globals.h"
 
+static struct sdastruct far *getsda(unsigned short *out_ds, unsigned short *out_si) {
+  /* DOS 3.0+ - GET ADDRESS OF SDA (Swappable Data Area)
+   * AX = 5D06h
+   *
+   * CF set on error (AX=error code)
+   * DS:SI -> sda pointer
+   */
+  unsigned short rds = 0, rsi = 0;
+  _asm {
+    mov ax, 5d06h
+    push ds
+    push si
+    int 21h
+    mov bx, ds
+    mov cx, si
+    pop si
+    pop ds
+    mov rds, bx
+    mov rsi, cx
+  }
+  if (out_ds) *out_ds = rds;
+  if (out_si) *out_si = rsi;
+  return(MK_FP(rds, rsi));
+}
+
 /* returns the CDS struct for drive. requires DOS 4+ */
 static struct cdsstruct far *getcds(unsigned int drive) {
   /* static to preserve state: only do init once */
@@ -77,8 +102,10 @@ static struct cdsstruct far *getcds(unsigned int drive) {
 
 int main(int argc, char **argv) {
   struct cdsstruct far *cds;
+  struct sdastruct far *sda;
   unsigned char drive_letter;
   unsigned int drive_num;
+  unsigned short rds, rsi;
 
   printf("MAPDRIVE v" PVER " - Based on EtherDFS\n");
 
@@ -101,13 +128,14 @@ int main(int argc, char **argv) {
 
   if (drive_letter < 'A' || drive_letter > 'Z') {
       printf("Invalid drive letter.\n");
-      return (1);
+      return 1;
   }
 
   drive_num = DRIVETONUM(drive_letter);
 
   /* Get the CDS for the specified drive */
   cds = getcds(drive_num);
+
 
   if (cds == NULL) {
     printf("Error: Could not get CDS for drive %c:.\n", drive_letter);
@@ -127,6 +155,19 @@ int main(int argc, char **argv) {
   cds->current_path[1] = ':';
   cds->current_path[2] = '\\';
   cds->current_path[3] = 0;
+
+
+  sda = getsda(&rds, &rsi);
+  printf("sda: %p\n", sda);
+  printf("sda segment: %x\n", rds);
+  printf("sda offset: %x\n", rsi);  
+  // send sda segment and offset to emulator
+  _asm {
+    mov ax, 1100h
+    mov bx, rds
+    mov dx, rsi
+    int 2fh
+  }
 
   printf("Drive %c: successfully mapped as a network drive.\n", drive_letter);
 

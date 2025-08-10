@@ -18,7 +18,7 @@ CFLAGS=-0 -s -d0 -ms -wx -ot
 all: mapdrive.exe
 
 etherdfs.obj: etherdfs.c dosstruc.h globals.h version.h
-	wcc $CFLAGS etherdfs.c -fo=etherdfs.obj
+	wcc -0 -s -d0 -ms -wx -ot etherdfs.c -fo=mapdrive.obj
 
 mapdrive.exe: etherdfs.obj
 	wlink system dos file etherdfs.obj option map=mapdrive name mapdrive
